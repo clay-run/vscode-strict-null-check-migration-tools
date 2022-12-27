@@ -1,7 +1,7 @@
 // @ts-check
 const path = require('path');
 const glob = require('glob');
-const { forStrictNullCheckEligibleFiles, forEachFileInSrc } = require('./src/getStrictNullCheckEligibleFiles');
+const { forStrictNullCheckEligibleFiles, forEachFileInSrc, forEachTsxFileInSrc } = require('./src/getStrictNullCheckEligibleFiles');
 const { getImportsForFile } = require('./src/tsHelper');
 
 const vscodeRoot = path.join(process.cwd(), process.argv[2]);
@@ -25,6 +25,19 @@ forStrictNullCheckEligibleFiles(vscodeRoot, () => { }, { includeTests }).then(as
     const dependedOnCount = new Map(eligibleFiles.map(file => [file, 0]));
 
     for (const file of await forEachFileInSrc(srcRoot)) {
+        if (eligibleSet.has(file)) {
+            // Already added
+            continue;
+        }
+
+        for (const imp of getImportsForFile(file, srcRoot)) {
+            if (dependedOnCount.has(imp)) {
+                dependedOnCount.set(imp, dependedOnCount.get(imp) + 1);
+            }
+        }
+    }
+
+    for (const file of await forEachTsxFileInSrc(srcRoot)) {
         if (eligibleSet.has(file)) {
             // Already added
             continue;

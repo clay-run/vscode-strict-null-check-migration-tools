@@ -10,7 +10,7 @@ const config = require('./config');
  */
 const forEachFileInSrc = (srcRoot, options) => {
     return new Promise((resolve, reject) => {
-        glob(`${srcRoot}/vs/**/*.ts`, (err, files) => {
+        glob(`${srcRoot}/**/*.ts`, (err, files) => {
             if (err) {
                 return reject(err);
             }
@@ -22,6 +22,20 @@ const forEachFileInSrc = (srcRoot, options) => {
     });
 };
 module.exports.forEachFileInSrc = forEachFileInSrc;
+
+const forEachTsxFileInSrc = (srcRoot, options) => {
+    return new Promise((resolve, reject) => {
+        glob(`${srcRoot}/**/*.tsx`, (err, files) => {
+            if (err) {
+                return reject(err);
+            }
+
+            return resolve(files.filter(file => 
+                (options && options.includeTests ? true : !file.endsWith('.test.tsx'))));
+        })
+    });
+};
+module.exports.forEachTsxFileInSrc = forEachTsxFileInSrc;
 
 /**
  * @param {string} vscodeRoot
@@ -45,7 +59,9 @@ module.exports.forStrictNullCheckEligibleFiles = async (vscodeRoot, forEach, opt
     }
 
     const files = await forEachFileInSrc(srcRoot, options);
-    return files
+    const tsxFiles = await forEachTsxFileInSrc(srcRoot, options);
+
+    return [...files, ...tsxFiles]
         .filter(file => !checkedFiles.has(file))
         .filter(file => !config.skippedFiles.has(path.relative(srcRoot, file)))
         .filter(file => {
